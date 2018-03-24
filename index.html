@@ -1,0 +1,240 @@
+
+<!doctype html>
+<html>
+  <head><br>
+
+	 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Socket.IO chat</title>
+	  
+	  
+	<style>
+		@import url(https://fonts.googleapis.com/css?family=Lato:400,700);
+		
+		$blue: #68A7FF; 
+		$green: #93C6D6; 
+		$grey: #344168;
+		
+	  * { margin: 0; padding: 0; box-sizing: border-box; }
+		
+		html, body{
+			margin: 0;
+			padding: 0;
+
+			min-width: 100%;
+			width: 100%;
+			max-width: 100%;
+
+			min-height: 100%;
+			height: 100%;
+			max-height: 100%;
+			position: fixed; 
+		}
+		
+		
+	  body { 
+		  font: 13px 
+			  Helvetica, Arial;
+		display: flex; 
+
+		}
+		
+		#chat-window{
+			float: left; 
+			width: 70%;
+			background-color: grey;
+			margin: 15px;
+			flex: 1; 
+			margin-bottom: 15px;
+			padding: 10px; 
+			overflow-y:scroll; 
+			
+		}
+		
+		#topLine{
+			position: relative; 
+			top: 0px; 
+			height:15px;
+			color:white;
+		}
+		
+		#online-users{
+			float: right;
+			width: 25%; 
+			margin: 15px;
+			background-color: grey;
+			margin-bottom: 8%; 
+			padding:10px;
+			overflow-y:scroll;  
+			color: white;
+			flex: 0.5; 
+		}
+		
+		#online-users ul{
+			list-style-type: none; 
+		}
+		
+	  	#submit { 
+		  margin: 15px;
+		  background: grey; 
+		  position:absolute; 	
+		  bottom: 0px; 
+		  width: 90%;
+		  
+		}
+		
+		#sendButton{
+			width: 100%;
+		}
+
+		.content{
+			list-style-type: none;
+		}
+		
+		#table-wrapper{
+			width: 100%;
+			height:90%; 
+		}
+		
+		table#chatLog{ /*entire chat box*/
+			width: 100%; 
+			max-height: 100%;
+			overflow-y: scroll;		
+		}
+		
+
+		table#chatLog th, td{
+			color:white;
+			word-wrap:break-word;
+			
+		}
+			
+
+		table#chatLog td:nth-child(1){
+			text-align: left; 
+			width: 15%;
+		}
+		
+		table#chatLog td:nth-child(2){
+			text-align: left;
+			width: 50%;
+		}
+		
+		table#chatLog td:nth-child(3){
+			text-align: right;
+			width: 25%;
+		}
+		
+   
+    </style>
+  </head>
+	
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+<script>
+
+
+	$(function() { //defined in the jquery 
+	  var socket = io(); //loads the socket.io clientside (exposes io global and then connects)
+		
+		
+		var localUser; 
+		
+		console.log('hello can you hear me when does this show up');
+		
+		socket.emit('register user', socket.id);
+			
+		socket.on('ready', function(userData){ //when ready, display the nickname and keeps the id for cookies 
+			document.getElementById("userIndicator").textContent = userData.userNickname;			$('#users').append($('<li>').text(userData.userNickname));				
+		});
+		
+		socket.on('total users', function(totalUsers){
+			var list = document.createElement('ul'); //make a list 
+			
+			//iterate through totalUsers and take every nickname and set it as as a new list 
+			for (var i=0; i < totalUsers.length; i++){
+				
+				var userItem = document.createElement('li'); //create the list item 
+				
+				var tempNick = totalUsers[i].userNickname;
+				userItem.appendChild(document.createTextNode(tempNick));
+				
+				//add it to list
+				list.appendChild(userItem); 
+			}
+			
+			var parent = document.getElementById("online-users");
+			var child = document.getElementById("users"); 
+			
+			parent.replaceChild(list, child);
+			//set users ul as the list full of totalUsers
+			// i hate javascript 			
+		});
+		
+		
+		socket.on('change color', function(color){
+			document.getElementById('userIndicator').style.color = color;
+		});
+		
+		
+		$('#submitMessageForm').submit(function(){ //when the user types a message, the server gets it as a 'chat message' event 
+			socket.emit('chat message', $('#sendButton').val()); //$ = identifier 
+			$('#sendButton').val('');
+			
+			return false;
+		});
+		
+		
+
+		socket.on('chat message', function(msg){ //event catcher for chat message 
+			console.log(msg);
+			var table = document.getElementById("chatLog");
+			
+			var row = table.insertRow(0);
+			
+			var u = row.insertCell(0);
+			var m = row.insertCell(1);
+			var t = row.insertCell(2);
+			
+			u.innerHTML = msg.user;
+			m.innerHTML = msg.message;
+			t.innerHTML = msg.timestamp;
+		});
+
+		
+	  });
+
+</script>
+	
+  <body>
+   
+   <div id="chat-window">
+  		<div id="topLine">
+  			<text >You are: &ensp;</text>
+   			<text id="userIndicator"></text>
+  		</div>
+  		
+  		<div id="table-wrapper">
+			<table id="chatLog">
+	   		</table>
+	   </div>
+  	
+   	
+   </div>
+   
+
+	  
+	 <div id="online-users"> 
+	 	<text id="onlineUsers">Online Users:</text>
+	 	<ul class="content" id="users">
+	 	</ul>
+	 </div>
+	 
+   <div id="submit">
+   	<form action="" id="submitMessageForm">
+      <input id="sendButton" autocomplete="off"/>
+    </form>
+   </div>
+  
+    
+</body>
+</html>
